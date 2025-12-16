@@ -11,31 +11,68 @@
 function deepClone(value, visited = new WeakMap()) {
   // TODO: Implement deep cloning
 
-  // Step 1: Handle primitives (return as-is)
-  // Primitives: null, undefined, number, string, boolean, symbol, bigint
+  const primitives = ['number', 'string', 'boolean', 'symbol', 'bigint'];
 
-  // Step 2: Check for circular references using the visited WeakMap
-  // If we've seen this object before, return the cached clone
+  if (value == null || primitives.includes(typeof value)) return value;
 
-  // Step 3: Handle Date objects
-  // Create a new Date with the same time value
+  else if (visited.has(value)) return visited.get(value);
 
-  // Step 4: Handle RegExp objects
-  // Create a new RegExp with the same source and flags
+  else if (value instanceof Date) {
+    const clone =  new Date(value.getTime());
+    visited.set(value, clone);
+    return clone;
+  }
 
-  // Step 5: Handle Map objects
-  // Create a new Map and deep clone each key-value pair
+  else if (value instanceof RegExp){
+    const clone =  new RegExp(value.source, value.flags);
+    visited.set(value, clone);
+    return clone;
+  } 
 
-  // Step 6: Handle Set objects
-  // Create a new Set and deep clone each value
+  else if (value instanceof Map){
+    const clone = new Map();
+    visited.set(value, clone);
+    value.forEach((val, key) => {
+      clone.set(deepClone(key, visited), deepClone(val, visited));
+    });
+    return clone;
+  } 
 
-  // Step 7: Handle Arrays
-  // Create a new array and deep clone each element
+  else if (value instanceof Set){
+    const clone = new Set();
+    visited.set(value, clone);
+    value.forEach((val) => clone.add(deepClone(val, visited)));
+    return clone;
+  }
 
-  // Step 8: Handle plain Objects
-  // Create a new object and deep clone each property
+  else if (Array.isArray(value)){
+    const clone = [];
+    visited.set(value, clone);
+    value.forEach((val) => clone.push(deepClone(val, visited)));
+    return clone;
+  }
 
-  return undefined; // Broken: Replace with your implementation
+  const clone = Object.create(Object.getPrototypeOf(value));
+
+  visited.set(value, clone);
+
+  const properties = [
+    ...Object.getOwnPropertyNames(value),
+    ...Object.getOwnPropertySymbols(value)
+  ]
+
+  for (const property of properties){
+    const descriptor = Object.getOwnPropertyDescriptor(value, property);
+
+    if('value' in descriptor){
+      descriptor.value = deepClone(descriptor.value, visited);
+    }
+
+    Object.defineProperty(clone, property, descriptor);
+
+  }
+
+  return clone;
 }
 
 module.exports = { deepClone };
