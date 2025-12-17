@@ -11,19 +11,21 @@
 function debounce(fn, delay) {
   // TODO: Implement debounce
 
-  // Step 1: Create a variable to store the timeout ID
+  let timeoutId = null;
 
-  // Step 2: Create the debounced function that:
-  //   - Clears any existing timeout
-  //   - Sets a new timeout to call fn after delay
-  //   - Preserves `this` context and arguments
+  function debounced(...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      fn.apply(this, args);
+    }, delay);
+  }
 
-  // Step 3: Add a cancel() method to clear pending timeout
+  debounced.cancel = function(){
+    clearTimeout(timeoutId);
+    timeoutId = null;
+  }
 
-  // Step 4: Return the debounced function
-
-  // Return a placeholder that doesn't work
-  throw new Error("Not implemented");
+  return debounced;
 }
 
 /**
@@ -37,23 +39,26 @@ function debounce(fn, delay) {
  * @returns {Function} The throttled function with a cancel() method
  */
 function throttle(fn, limit) {
-  // TODO: Implement throttle
 
-  // Step 1: Create variables to track:
-  //   - Whether we're currently in a throttle period
-  //   - The timeout ID for cleanup
+  let inTrottle = false;
+  let timeoutId = null;
+  
+  function trottled(...args){
+    if (!inTrottle){
+      fn.apply(this, args);
+      inTrottle = true;
+      
+      setTimeout(()=> inTrottle = false, limit);
+    }
+  }
 
-  // Step 2: Create the throttled function that:
-  //   - If not throttling, execute fn immediately and start throttle period
-  //   - If throttling, ignore the call
-  //   - Preserves `this` context and arguments
+  trottled.cancel = function(){
+    clearTimeout(timeoutId);
+    inTrottle = false;
+    timeoutId = null;
+  }
 
-  // Step 3: Add a cancel() method to reset throttle state
-
-  // Step 4: Return the throttled function
-
-  // Return a placeholder that doesn't work
-  throw new Error("Not implemented");
+  return trottled;
 }
 
 module.exports = { debounce, throttle };
