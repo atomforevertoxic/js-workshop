@@ -11,29 +11,26 @@
  * @returns {Function} A new bound function
  */
 function customBind(fn, context, ...boundArgs) {
-  // TODO: Implement custom bind
 
-  // Step 1: Validate that fn is a function
-  // Throw TypeError if not
+  if (typeof fn !== 'function') throw new TypeError("fn is not a function");
 
-  // Step 2: Create the bound function
-  // It should:
-  //   - Combine boundArgs with any new arguments
-  //   - Call the original function with the combined arguments
-  //   - Use the correct `this` context
+  const boundFunction = function(...args){
+    
+    const fullArgs = [...boundArgs, ...args];
+    
+    const isCountructCall = this instanceof boundFunction;
 
-  // Step 3: Handle constructor calls (when used with `new`)
-  // When called as a constructor:
-  //   - `this` should be a new instance, not the bound context
-  //   - The prototype chain should be preserved
+    const contextToCall = isCountructCall ? this : context;
 
-  // Step 4: Preserve the prototype for constructor usage
-  // boundFunction.prototype = Object.create(fn.prototype)
+    return fn.apply(contextToCall, fullArgs);
+  }
 
-  // Step 5: Return the bound function
+  if (fn.prototype){
+    boundFunction.prototype = Object.create(fn.prototype);
+  }
 
-  // Return placeholder that doesn't work
-  throw new Error("Not implemented");
+
+  return boundFunction;
 }
 
 /**
@@ -43,9 +40,24 @@ function customBind(fn, context, ...boundArgs) {
  * myFunction.customBind(context, ...args)
  */
 
-// Uncomment and implement:
-// Function.prototype.customBind = function(context, ...boundArgs) {
-//   // Your implementation
-// };
+Function.prototype.customBind = function(context, ...boundArgs) {
+  const fn = this;
+
+  const boundFunction = function(...args){
+    const fullArgs = [...boundArgs, ...args];
+
+    isCountructCall = this instanceof boundFunction;
+
+    const contextToCall = isCountructCall ? this : context;
+
+    return fn.apply(contextToCall, fullArgs)
+  }
+
+  if (fn.prototype){
+    boundFunction.prototype = Object.create(fn.prototype);
+  }
+
+  return boundFunction;
+};
 
 module.exports = { customBind };
