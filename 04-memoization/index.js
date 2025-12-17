@@ -11,46 +11,53 @@
  * @returns {Function} Memoized function with cache control methods
  */
 function memoize(fn, options = {}) {
-  // TODO: Implement memoization
+  
+  const { maxSize = Infinity, ttl = Infinity, keyGenerator = null } = options;
 
-  // Step 1: Extract options with defaults
-  // const { maxSize, ttl, keyGenerator } = options;
+  const cache = new Map();
 
-  // Step 2: Create the cache (use Map for ordered keys)
-  // const cache = new Map();
+  const generator = keyGenerator || ((...args) => JSON.stringify(args)); 
 
-  // Step 3: Create default key generator
-  // Default: JSON.stringify(args) or args.join(',')
+  const memoized = function(...args){
+    const cacheKey = generator(args);
 
-  // Step 4: Create the memoized function
-  // - Generate cache key from arguments
-  // - Check if key exists and is not expired (TTL)
-  // - If cached, return cached value
-  // - If not cached, call fn and store result
-  // - Handle maxSize eviction (remove oldest)
+    if (cache.has(cacheKey)){
 
-  // Step 5: Add cache control methods
-  // memoized.cache = {
-  //   clear: () => cache.clear(),
-  //   delete: (key) => cache.delete(key),
-  //   has: (key) => cache.has(key),
-  //   get size() { return cache.size; }
-  // };
+      const entry = cache.get(cacheKey);
 
-  // Step 6: Return memoized function
+      let isExpired = ttl !== Infinity && (Date.now() - entry.timestamp) > ttl;
 
-  // Return placeholder that doesn't work
-  const memoized = function () {
-    return undefined;
-  };
+      if (!isExpired){
+        return entry.value;
+      }
+
+      cache.delete(cacheKey);
+    }
+
+    const result = fn.apply(this, args);
+
+      
+    cache.set(cacheKey, {
+      value: result,
+      timestamp: Date.now()
+    });
+      
+
+    if (cache.size > maxSize){
+      const firstKey = cache.keys().next().value;
+      cache.delete(firstKey);
+    }
+
+    return result;
+  }
+
   memoized.cache = {
-    clear: () => {},
-    delete: () => false,
-    has: () => false,
-    get size() {
-      return -1;
-    },
+    clear: () => cache.clear(),
+    delete: (...args) => cache.delete(generator(args)),
+    has: (...args) => cache.has(generator(args)),
+    get size() { return cache.size; }
   };
+
   return memoized;
 }
 
