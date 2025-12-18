@@ -15,38 +15,40 @@
  * @returns {Promise} Result of fn or throws last error
  */
 async function retry(fn, options = {}) {
-  // TODO: Implement retry with backoff
+  const {
+    maxRetries = 3,
+    initialDelay = 1000,
+    maxDelay = 30000,
+    backoff = 'exponential',
+    jitter = false,
+    retryIf = () => true,
+    onRetry = () => {}
+  } = options;
 
-  // Step 1: Extract options with defaults
-  // const {
-  //   maxRetries = 3,
-  //   initialDelay = 1000,
-  //   maxDelay = 30000,
-  //   backoff = 'exponential',
-  //   jitter = false,
-  //   retryIf = () => true,
-  //   onRetry = () => {}
-  // } = options;
 
-  // Step 2: Initialize attempt counter and last error
+  let lastError = null;
 
-  // Step 3: Loop up to maxRetries + 1 (initial attempt + retries)
+  for (let attempt = 0; attempt <= maxRetries; attempt++){
+    try{
+      const result = await fn();
+      return result;
+    }
+    catch(error){
 
-  // Step 4: Try to execute fn
-  // - On success: return result
-  // - On error: check if should retry
+      lastError = error;
 
-  // Step 5: If should retry:
-  // - Call onRetry callback
-  // - Calculate delay based on backoff strategy
-  // - Apply maxDelay cap
-  // - Apply jitter if enabled
-  // - Wait for delay
-  // - Continue to next attempt
+      if (attempt === maxRetries || !retryIf(error, attempt+1)) throw lastError;
 
-  // Step 6: If all retries exhausted, throw last error
+      await onRetry(error, attempt+1);
+        
+      let delay = calculateDelay(backoff, attempt+1, initialDelay);
+      delay = Math.min(delay, maxDelay);
 
-  throw new Error("Not implemented"); // Replace with your implementation
+      if (jitter) delay = applyJitter(delay);
+
+      await sleep(delay);
+    }
+  }
 }
 
 /**
@@ -58,13 +60,15 @@ async function retry(fn, options = {}) {
  * @returns {number} Calculated delay in ms
  */
 function calculateDelay(strategy, attempt, initialDelay) {
-  // TODO: Implement delay calculation
+  switch (strategy){
+    case 'fixed': return initialDelay;
+    
+    case 'linear': return initialDelay * attempt;
 
-  // Fixed: delay = initialDelay
-  // Linear: delay = initialDelay * attempt
-  // Exponential: delay = initialDelay * 2^(attempt-1)
+    case 'exponential': return initialDelay * Math.pow(2, attempt-1);
 
-  throw new Error("Not implemented");
+    default: return initialDelay;
+  }
 }
 
 /**
@@ -74,10 +78,7 @@ function calculateDelay(strategy, attempt, initialDelay) {
  * @returns {number} Delay with random jitter (0-25% added)
  */
 function applyJitter(delay) {
-  // TODO: Add 0-25% random jitter
-  // return delay * (1 + Math.random() * 0.25);
-
-  throw new Error("Not implemented");
+  return delay * (1 + Math.random() * 0.25);
 }
 
 /**
