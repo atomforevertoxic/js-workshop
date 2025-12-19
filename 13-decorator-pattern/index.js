@@ -11,22 +11,17 @@
  * @returns {Function} Decorated function
  */
 function withLogging(fn) {
-  // TODO: Implement withLogging
+  return function(...args) {
 
-  // Step 1: Return a new function that wraps fn
+  console.log(`Function name: ${fn.name}\nFunction arguments: ${args}`);
 
-  // Step 2: Log the function name and arguments
+  const result = fn.apply(this, args);
 
-  // Step 3: Call the original function
+  console.log("Return value: " + result)
 
-  // Step 4: Log the return value
+  return result;
 
-  // Step 5: Return the result
-
-  // Note: Preserve 'this' context using apply/call
-
-  // Broken: throws error
-  throw new Error("Not implemented");
+  }
 }
 
 /**
@@ -38,19 +33,18 @@ function withLogging(fn) {
  * @returns {Function} Decorated function
  */
 function withTiming(fn) {
-  // TODO: Implement withTiming
 
-  // Step 1: Return a new function
+  return function(...args){
 
-  // Step 2: Record start time (performance.now() or Date.now())
+    const startTime = Date.now();
+    
+    const result = fn.apply(this, args);
 
-  // Step 3: Call original function
+    const duration = Date.now() - startTime;
+    console.log("Duration of function call is " + duration);
 
-  // Step 4: Calculate and log duration
-
-  // Step 5: Return result
-
-  return () => undefined; // Broken placeholder
+    return result;
+  }
 }
 
 /**
@@ -63,20 +57,21 @@ function withTiming(fn) {
  * @returns {Function} Decorated function
  */
 function withRetry(fn, maxRetries = 3) {
-  // TODO: Implement withRetry
 
-  // Step 1: Return a new function
+  return function(...args){
 
-  // Step 2: Track attempt count
+    let lastError = null;
 
-  // Step 3: Loop up to maxRetries:
-  //   - Try to call fn
-  //   - On success, return result
-  //   - On failure, increment attempts and continue
-
-  // Step 4: If all retries fail, throw the last error
-
-  return () => undefined; // Broken placeholder
+    for (let attempt = 0; attempt <= maxRetries; attempt++){
+      try{
+        return fn.apply(this, args);
+      }
+      catch(error){
+        lastError = error;
+      }
+    }
+    throw new Error("Cannot apply function because of " + lastError.message);
+  }
 }
 
 /**
@@ -88,11 +83,22 @@ function withRetry(fn, maxRetries = 3) {
  * @returns {Function} Decorated function with cache
  */
 function withMemoize(fn) {
-  // TODO: Implement withMemoize
 
-  // Similar to memoization assignment but as a decorator
+  const cache = new Map();
 
-  return () => undefined; // Broken placeholder
+  return function(...args){
+
+    const key = JSON.stringify(args);
+
+    if (cache.has(key)){
+      return cache.get(key);
+    }
+
+    const value = fn.apply(this, args);
+    cache.set(key, value);
+
+    return value;
+  }
 }
 
 /**
@@ -105,17 +111,20 @@ function withMemoize(fn) {
  * @returns {Function} Decorated function
  */
 function withValidation(fn, validator) {
-  // TODO: Implement withValidation
 
-  // Step 1: Return a new function
+  return function(...args){
 
-  // Step 2: Call validator with arguments
+    if (validator && typeof validator === 'function'){
+      
+      const isValid = validator(...args);
+    
+      if (isValid){
+        return fn.apply(this, args);
+      }
 
-  // Step 3: If validation fails, throw error
-
-  // Step 4: If passes, call original function
-
-  return () => undefined; // Broken placeholder
+      throw new Error("Args are not valid");
+    }
+  }
 }
 
 /**
@@ -128,19 +137,26 @@ function withValidation(fn, validator) {
  * @returns {Object} Object with cached method
  */
 function withCache(obj, methodName) {
-  // TODO: Implement withCache
 
-  // Step 1: Get the original method
+  const originalMethod = obj[methodName];
+  const cache = new Map()
 
-  // Step 2: Create a cache (Map)
+  obj[methodName] = function(...args){
 
-  // Step 3: Replace the method with a caching wrapper
+    const key = JSON.stringify(args);
 
-  // Step 4: Return the object
+    if (cache.has(key)){
+      return cache.get(key); 
+    }
 
-  // Broken: deletes the method instead of caching it
-  delete obj[methodName];
+    const value = originalMethod.apply(this, args);
+    cache.set(key, value);
+
+    return value;
+  }
+
   return obj;
+
 }
 
 /**
@@ -153,15 +169,12 @@ function withCache(obj, methodName) {
  * @returns {Function} Composed decorator
  */
 function compose(...decorators) {
-  // TODO: Implement compose
 
-  // Return a function that takes fn and applies all decorators
-
-  // Example: compose(a, b, c)(fn) = a(b(c(fn)))
-
-  return (fn) => {
-    throw new Error("Not implemented");
-  };
+  return function(fn){
+    return decorators.reduceRight((currentFn, decorator) => {
+      return decorator(currentFn);
+    }, fn)
+  }
 }
 
 /**
@@ -173,13 +186,11 @@ function compose(...decorators) {
  * @returns {Function} Piped decorator
  */
 function pipe(...decorators) {
-  // TODO: Implement pipe
-
-  // Same as compose but left-to-right
-
-  return (fn) => {
-    throw new Error("Not implemented");
-  };
+  return function(fn){
+    return decorators.reduce((currentFn, decorator) => {
+      return decorator(currentFn);
+    }, fn)
+  }
 }
 
 // Storage for logs (used in tests)
@@ -187,7 +198,7 @@ const logs = [];
 
 function log(message) {
   logs.push(message);
-  // console.log(message); // Uncomment for debugging
+  console.log(message); // Uncomment for debugging
 }
 
 function clearLogs() {
