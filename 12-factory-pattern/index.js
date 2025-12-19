@@ -61,7 +61,6 @@ class Triangle {
  * A factory object that creates shapes based on type.
  */
 const ShapeFactory = {
-  // TODO: Implement create method
 
   /**
    * Create a shape instance
@@ -70,12 +69,16 @@ const ShapeFactory = {
    * @returns {Object} Shape instance
    */
   create(type, options) {
-    // TODO: Implement factory logic
 
-    // Use switch or object lookup to create the right shape
-    // Throw error for unknown types
+    switch(type){
+      case 'circle': return new Circle(options);
 
-    return null; // Replace with implementation
+      case 'rectangle': return new Rectangle(options);
+
+      case 'triangle': return new Triangle(options);
+
+      default: throw new Error('Unknown type for factory');
+    }
   },
 };
 
@@ -86,8 +89,7 @@ const ShapeFactory = {
  */
 class Factory {
   constructor() {
-    // TODO: Initialize registry
-    // this.registry = new Map();
+    this.registry = new Map();
   }
 
   /**
@@ -99,8 +101,7 @@ class Factory {
    * @param {Function} [options.validate] - Validation function
    */
   register(type, Class, options = {}) {
-    // TODO: Implement register
-    // Store the class and options in the registry
+    this.registry.set(type, {Class, options});
   }
 
   /**
@@ -109,9 +110,7 @@ class Factory {
    * @returns {boolean} true if type was registered
    */
   unregister(type) {
-    // TODO: Implement unregister
-
-    throw new Error("Not implemented");
+    return this.registry.delete(type);
   }
 
   /**
@@ -121,19 +120,27 @@ class Factory {
    * @returns {Object} Instance of the type
    */
   create(type, args = {}) {
-    // TODO: Implement create
 
-    // Step 1: Check if type is registered
+    if (this.has(type)){
+      const {Class, options} = this.registry.get(type);
 
-    // Step 2: Get the class and options
+      if (options.required){
+        for (const key of options.required){
+          if (! (key in args)){
+            throw new Error('Missing required arguments');
+          }
+        }
+      }
+      if (options.validate){
+        const isValid = options.validate(args);
+        if (!isValid){
+          throw new Error('Invalid arguments!');
+        }
+      }
 
-    // Step 3: Validate required fields (if specified)
-
-    // Step 4: Run custom validation (if specified)
-
-    // Step 5: Create and return instance
-
-    return null; // Replace with implementation
+      return  new Class(args);
+    }
+    throw new Error('Unknow type for factory');
   }
 
   /**
@@ -142,9 +149,7 @@ class Factory {
    * @returns {boolean}
    */
   has(type) {
-    // TODO: Implement has
-
-    throw new Error("Not implemented");
+    return this.registry.has(type);
   }
 
   /**
@@ -152,17 +157,14 @@ class Factory {
    * @returns {string[]}
    */
   getTypes() {
-    // TODO: Implement getTypes
-
-    throw new Error("Not implemented");
+    return Array.from(this.registry.keys());
   }
 
   /**
    * Clear all registered types
    */
   clear() {
-    // TODO: Implement clear
-    throw new Error("Not implemented");
+    this.registry = new Map();
   }
 }
 
