@@ -5,8 +5,7 @@
  */
 class Pipeline {
   constructor() {
-    // TODO: Initialize middleware array
-    // this.middleware = [];
+    this.middleware = [];
   }
 
   /**
@@ -15,15 +14,12 @@ class Pipeline {
    * @returns {Pipeline} this (for chaining)
    */
   use(fn) {
-    // TODO: Implement use
 
-    // Step 1: Validate fn is a function
+    if (typeof fn === 'function'){
+      this.middleware.push(fn);
+    }
 
-    // Step 2: Add to middleware array
-
-    // Step 3: Return this for chaining
-
-    return null; // Broken: should return this
+    return this;
   }
 
   /**
@@ -32,21 +28,27 @@ class Pipeline {
    * @returns {Promise} Resolves when pipeline completes
    */
   run(context) {
-    // TODO: Implement run
 
-    // Step 1: Create a dispatch function that:
-    //   - Takes an index
-    //   - Gets middleware at that index
-    //   - If no middleware, resolve
-    //   - Otherwise, call middleware with context and next function
-    //   - next = () => dispatch(index + 1)
+    const dispatch = (index) => {
 
-    // Step 2: Start dispatch at index 0
+      if (index>=this.middleware.length) return Promise.resolve();
 
-    // Step 3: Return promise for async support
+      const fn = this.middleware[index];
 
-    // Broken: rejects instead of resolving
-    return Promise.reject(new Error("Not implemented"));
+      if (!fn) return Promise.resolve();
+
+      try{
+        return Promise.resolve(
+          fn(context, () => dispatch(index+1))
+        );
+      }
+      catch(error){
+        return Promise.reject(error);
+      }
+
+    }
+
+    return dispatch(0);
   }
 
   /**
@@ -54,10 +56,6 @@ class Pipeline {
    * @returns {Function} Composed middleware function
    */
   compose() {
-    // TODO: Implement compose
-
-    // Return a function that takes context and runs the pipeline
-
     return (context) => this.run(context);
   }
 }
@@ -71,27 +69,32 @@ class Pipeline {
  * @returns {Function} Composed function (context) => Promise
  */
 function compose(middleware) {
-  // TODO: Implement compose
 
-  // Validate all items are functions
-
-  // Return a function that:
-  // - Takes context
-  // - Creates dispatch(index) that calls middleware[index]
-  // - Returns dispatch(0)
+  middleware.forEach((fn) => {
+    if (typeof fn !== 'function'){
+      throw new Error('Middleware must be functions');
+    }
+  });
 
   return function (context) {
     function dispatch(index) {
-      // TODO: Implement dispatch
 
-      // Step 1: Get middleware at index
-      // Step 2: If none, return resolved promise
-      // Step 3: Create next function = () => dispatch(index + 1)
-      // Step 4: Call middleware with (context, next)
-      // Step 5: Return as promise
+      if (index >= middleware.length) return Promise.resolve();
 
-      // Broken: rejects instead of resolving
-      return Promise.reject(new Error("Not implemented"));
+      const fn = middleware[index];
+
+      if (!fn) return Promise.resolve();
+
+      function next(){
+        return dispatch(index + 1);
+      }
+
+      try{
+        return Promise.resolve(fn(context, next));
+      }
+      catch(error){
+        return Promise.reject(error);
+      }
     }
 
     return dispatch(0);
@@ -106,16 +109,15 @@ function compose(middleware) {
  * @returns {Function} Conditional middleware
  */
 function when(condition, middleware) {
-  // TODO: Implement when
 
-  // Return middleware that:
-  // - Checks condition(ctx)
-  // - If true, runs middleware
-  // - If false, just calls next()
+  return async function(context, next){
 
-  return (ctx, next) => {
-    throw new Error("Not implemented");
-  };
+    if (condition(context)){
+      return middleware(context, next);
+    }
+
+    return next();
+  }
 }
 
 /**
@@ -125,15 +127,16 @@ function when(condition, middleware) {
  * @returns {Function} Error handling middleware
  */
 function errorMiddleware(errorHandler) {
-  // TODO: Implement errorMiddleware
+  
+  return async function(context, next){
 
-  // Return middleware that:
-  // - Wraps next() in try/catch
-  // - Calls errorHandler if error thrown
-
-  return async (ctx, next) => {
-    throw new Error("Not implemented");
-  };
+    try{
+      await next();
+    }
+    catch(error){
+      await errorHandler(error, context);
+    }
+  }
 }
 
 module.exports = {
